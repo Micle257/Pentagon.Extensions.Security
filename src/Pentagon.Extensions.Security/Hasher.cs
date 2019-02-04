@@ -22,7 +22,9 @@ namespace Pentagon.Extensions.Security
         /// <exception cref="StringArgumentException"> When <paramref name="password" /> is null or empty. </exception>
         public string HashPassword(string password)
         {
-            Require.StringNotNullNorEmpty(() => password);
+            if (string.IsNullOrWhiteSpace(password))
+                throw new ArgumentException("Password is empty or null.");
+            
             var hashBytes = GenerateSaltedHash(password, Convert.FromBase64String(Salt));
             return Convert.ToBase64String(hashBytes);
         }
@@ -31,10 +33,14 @@ namespace Pentagon.Extensions.Security
         /// <exception cref="StringArgumentException"> When <paramref name="password" /> or <paramref name="salt" /> is null or empty. </exception>
         public string HashPassword(string password, string salt)
         {
-            Require.StringNotNullNorEmpty(() => password);
-            Require.StringNotNullNorEmpty(() => salt);
+            if (string.IsNullOrWhiteSpace(password))
+                throw new ArgumentException("Password is empty or null.");
+            
+            if (string.IsNullOrWhiteSpace(salt))
+                throw new ArgumentException("Salt is empty or null.");
 
-            Require.Condition(() => salt.Length > 0, message: "The salt length must be grater than zero");
+            if (salt.Length <= 0)
+                throw new ArgumentException("The salt length must be grater than zero");
 
             var saltBytes = Convert.FromBase64String(salt);
             var hashBytes = GenerateSaltedHash(password, saltBytes);
@@ -45,8 +51,11 @@ namespace Pentagon.Extensions.Security
         /// <exception cref="StringArgumentException"> When <paramref name="hashedPassword" /> or <paramref name="providedPassword" /> are null or empty. </exception>
         public bool VerifyHashedPassword(string hashedPassword, string providedPassword)
         {
-            Require.StringNotNullNorEmpty(() => hashedPassword);
-            Require.StringNotNullNorEmpty(() => providedPassword);
+            if (string.IsNullOrWhiteSpace(hashedPassword))
+                throw new ArgumentException("Hashed password is empty or null.");
+            
+            if (string.IsNullOrWhiteSpace(providedPassword))
+                throw new ArgumentException("Provided password is empty or null.");
 
             var providedPasswordHash = HashPassword(providedPassword, Salt);
             return string.CompareOrdinal(hashedPassword, providedPasswordHash) == 0;

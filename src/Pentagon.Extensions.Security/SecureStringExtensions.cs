@@ -20,7 +20,8 @@ namespace Pentagon.Extensions.Security
         [Pure]
         public static string ConvertToString([NotNull] this SecureString secureString)
         {
-            Require.NotNull(() => secureString);
+            if (secureString == null)
+                throw new ArgumentNullException(nameof(secureString));
 
             var unmanaged = IntPtr.Zero;
 
