@@ -1,11 +1,4 @@
-﻿// -----------------------------------------------------------------------
-//  <copyright file="Hasher.cs">
-//   Copyright (c) Michal Pokorný. All Rights Reserved.
-//  </copyright>
-// -----------------------------------------------------------------------
-
-namespace Pentagon.Extensions.Security
-{
+﻿namespace Pentagon.Extensions.Security {
     using System;
     using System.Linq;
     using System.Security.Cryptography;
@@ -13,10 +6,9 @@ namespace Pentagon.Extensions.Security
     using Exceptions;
 
     /// <summary> An <see cref="IHasher" /> implementation with SHA512 hashing algorithm. </summary>
-    public sealed class Hasher : IHasher
+    public sealed class SHA512Hasher : IHasher
     {
-        /// <summary> The salt. </summary>
-        const string Salt = "QcCWi5geGEm2MrqWi17FxqiOIHddbVeZDtErHem5L7Y=";
+        public const int SaltSize = 128 / 8;
 
         /// <inheritdoc />
         /// <exception cref="StringArgumentException"> When <paramref name="password" /> is null or empty. </exception>
@@ -24,29 +16,13 @@ namespace Pentagon.Extensions.Security
         {
             if (string.IsNullOrWhiteSpace(password))
                 throw new ArgumentException("Password is empty or null.");
+
+            var salt = RandomHelper.GenerateRandom(SaltSize);
             
-            var hashBytes = GenerateSaltedHash(password, Convert.FromBase64String(Salt));
+            var hashBytes = GenerateSaltedHash(password, salt);
             return Convert.ToBase64String(hashBytes);
         }
-
-        /// <inheritdoc />
-        /// <exception cref="StringArgumentException"> When <paramref name="password" /> or <paramref name="salt" /> is null or empty. </exception>
-        public string HashPassword(string password, string salt)
-        {
-            if (string.IsNullOrWhiteSpace(password))
-                throw new ArgumentException("Password is empty or null.");
-            
-            if (string.IsNullOrWhiteSpace(salt))
-                throw new ArgumentException("Salt is empty or null.");
-
-            if (salt.Length <= 0)
-                throw new ArgumentException("The salt length must be grater than zero");
-
-            var saltBytes = Convert.FromBase64String(salt);
-            var hashBytes = GenerateSaltedHash(password, saltBytes);
-            return Convert.ToBase64String(hashBytes);
-        }
-
+        
         /// <inheritdoc />
         /// <exception cref="StringArgumentException"> When <paramref name="hashedPassword" /> or <paramref name="providedPassword" /> are null or empty. </exception>
         public bool VerifyHashedPassword(string hashedPassword, string providedPassword)
@@ -57,7 +33,14 @@ namespace Pentagon.Extensions.Security
             if (string.IsNullOrWhiteSpace(providedPassword))
                 throw new ArgumentException("Provided password is empty or null.");
 
-            var providedPasswordHash = HashPassword(providedPassword, Salt);
+            var hashedPasswordBytes = Convert.FromBase64String(hashedPassword);
+
+            var salt = hashedPasswordBytes.Take(SaltSize).ToArray();
+
+            var providedPasswordHashBuffer = GenerateSaltedHash(providedPassword, salt);
+
+            var providedPasswordHash = Convert.ToBase64String(providedPasswordHashBuffer);
+
             return string.CompareOrdinal(hashedPassword, providedPasswordHash) == 0;
         }
 
@@ -67,10 +50,15 @@ namespace Pentagon.Extensions.Security
         /// <returns> </returns>
         byte[] GenerateSaltedHash(string password, byte[] salt)
         {
-            var text = Encoding.UTF8?.GetBytes(password);
+            var text = Encoding.UTF8.GetBytes(password);
+
             var managed = SHA512.Create();
-            var textWithSalt = text.Concat(salt).ToArray();
-            return managed.ComputeHash(textWithSalt);
+
+            var textWithSalt = salt.Concat(text).ToArray();
+
+            var hash = managed.ComputeHash(textWithSalt);
+
+            return salt.Concat(hash).ToArray();
         }
     }
 }
