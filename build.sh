@@ -1,0 +1,1 @@
+sh /c/Users/Michal/Source/GitHub/build.sh Pentagon.Extensions.Security Pentagon.Extensions.Security

@@ -28,4 +28,72 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <ReplacePackageReferences Condition="'$(ReplacePackageReferences)' == ''">true</ReplacePackageReferences>
+    <ReplaceProjectReferences Condition="'$(ReplaceProjectReferences)' == ''">true</ReplaceProjectReferences>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="'$(SolutionPath)' != '' AND '$(SolutionPath)' != '*undefined*' AND Exists('$(SolutionPath)')">
+      <PropertyGroup>
+        <SolutionFileContent>$([System.IO.File]::ReadAllText($(SolutionPath)))</SolutionFileContent>
+        <SmartSolutionDir>$([System.IO.Path]::GetDirectoryName( $(SolutionPath) ))</SmartSolutionDir>
+        <RegexPattern>(?&lt;="[PackageName]", ")(.*)(?=", ")</RegexPattern>
+        <HasSolution>true</HasSolution>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <HasSolution>false</HasSolution>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+  <Choose>
+    <When Condition="$(ReplacePackageReferences) AND $(HasSolution)">
+      <ItemGroup>
+        <!-- Keep the identity of the  packagereference -->
+        <SmartPackageReference Include="@(PackageReference)">
+          <PackageName>%(Identity)</PackageName>
+          <InSolution>$(SolutionFileContent.Contains('\%(Identity).csproj'))</InSolution>
+        </SmartPackageReference>
+
+        <!-- Filter them by mapping them to another itemGroup using the WithMetadataValue item function -->
+        <PackageInSolution Include="@(SmartPackageReference -> WithMetadataValue('InSolution', True) )">
+          <Pattern>$(RegexPattern.Replace('[PackageName]','%(PackageName)') )</Pattern>
+          <SmartPath>$([System.Text.RegularExpressions.Regex]::Match( '$(SolutionFileContent)', '%(Pattern)' ))</SmartPath>
+        </PackageInSolution>
+
+        <!-- <ProjectReference  Include="@(PackageInSolution -> '$(SmartSolutionDir)\%(SmartPath)' )"/> -->
+        <ProjectReference Include="@(PackageInSolution -> '$(SmartSolutionDir)\%(SmartPath)' )">
+          <Name>@(PackageInSolution -> %(PackageName))</Name>
+        </ProjectReference>
+
+        <!-- Remove the package references that are now referenced as projects -->
+        <PackageReference Remove="@(PackageInSolution -> '%(PackageName)' )"/>
+      </ItemGroup>
+    </When>
+    <When Condition="$(ReplaceProjectReferences) AND '$(_RestoreSolutionFileUsed)' == ''">
+      <ItemGroup>
+
+        <!-- Keep the identity of the  project reference (relative path), determine the project name and whether the project is contained in the current solution -->
+        <SmartProjectReference Include="@(ProjectReference)">
+          <OriginalIdentity>%(Identity)</OriginalIdentity>
+          <ProjectName>$([System.IO.Path]::GetFileNameWithoutExtension( $([System.IO.Path]::GetFullPath( '%(OriginalIdentity)' )) ))</ProjectName>
+          <InSolution>$(SolutionFileContent.Contains('\%(ProjectName).csproj'))</InSolution>
+        </SmartProjectReference>
+
+        <!-- Filter them by mapping them to another itemGroup using the WithMetadataValue item function -->
+        <ProjectNotInSolution Include="@(SmartProjectReference -> WithMetadataValue('InSolution', False) )">
+        </ProjectNotInSolution>
+
+        <!--Reference the latest version of the package (why not * ? > see https://github.com/NuGet/Home/issues/7328-->
+        <PackageReference  Include="@(ProjectNotInSolution -> '%(ProjectName)' )" Version="[*,9999.0]"/>
+
+        <!-- Remove the project references that are now referenced as packages -->
+        <ProjectReference Remove="@(ProjectNotInSolution -> '%(OriginalIdentity)' )"/>
+      </ItemGroup>
+
+    </When>
+  </Choose>
+
 </Project>
