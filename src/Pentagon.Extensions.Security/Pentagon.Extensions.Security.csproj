@@ -1,4 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Pentagon.Extensions.Security</RootNamespace>
@@ -7,21 +8,25 @@
     <Description>...</Description>
     <Copyright>Copyright (c) Michal Pokorný. All Rights Reserved.</Copyright>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Version>1.1.0</Version>
+    <Version>1.5.0</Version>
     <Company />
-    <LangVersion>7.2</LangVersion>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
+  
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <OutputPath>..\..\build\$(AssemblyName)\</OutputPath>
     <DocumentationFile>..\..\build\$(AssemblyName)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
+  
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <OutputPath>..\..\debug\$(AssemblyName)\</OutputPath>
   </PropertyGroup>
+  
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="2019.1.1" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
   </ItemGroup>
+  
   <Choose>
     <When Condition="'$(SolutionPath)'=='C:\Users\Michal\Source\Pentagon.All.sln' AND '$(Configuration)'=='Debug'">
       <ItemGroup>
@@ -34,4 +39,5 @@
       </ItemGroup>
     </Otherwise>
   </Choose>
+  
 </Project>
