@@ -21,6 +21,17 @@
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="2019.1.1" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
-    <PackageReference Include="Pentagon.Common" Version="1.6.4" />
   </ItemGroup>
+  <Choose>
+    <When Condition="'$(SolutionPath)'=='C:\Users\Michal\Source\Pentagon.All.sln' AND '$(Configuration)'=='Debug'">
+      <ItemGroup>
+        <ProjectReference Include="..\..\..\Pentagon.Common\src\Pentagon.Common\Pentagon.Common.csproj" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <PackageReference Include="Pentagon.Common" Version="1.6.4" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
 </Project>
