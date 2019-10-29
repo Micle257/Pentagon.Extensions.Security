@@ -11,12 +11,12 @@ namespace Pentagon.Extensions.Security
 
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddHasher(this IServiceCollection services, HasherType type = HasherType.Default)
+        public static IServiceCollection AddHasher(this IServiceCollection services, HasherType type = HasherType.Default, bool useSalt = true)
         {
             switch (type)
             {
                 case HasherType.SHA512:
-                    services.AddTransient<IHasher, SHA512Hasher>();
+                    services.AddTransient<IHasher>(c => new Sha512Hasher(useSalt ? 16 : (int?) null));
                     break;
                     
                 case HasherType.Unspecified:

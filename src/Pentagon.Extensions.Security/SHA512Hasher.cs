@@ -4,11 +4,26 @@
     using System.Security.Cryptography;
     using System.Text;
     using Exceptions;
+    using JetBrains.Annotations;
 
     /// <summary> An <see cref="IHasher" /> implementation with SHA512 hashing algorithm. </summary>
-    public sealed class SHA512Hasher : IHasher
+    public sealed class Sha512Hasher : IHasher
     {
-        public const int SaltSize = 128 / 8;
+        readonly int? _saltSizeBytes;
+
+        [NotNull]
+        readonly Encoding _textEncoding;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Sha512Hasher" /> class.
+        /// </summary>
+        /// <param name="saltSizeBytes">The salt size in bytes. If <c>null</c> then salting will be disabled.</param>
+        /// <param name="textEncoding">The text encoding.</param>
+        public Sha512Hasher(int? saltSizeBytes = 16, Encoding textEncoding=null)
+        {
+            _saltSizeBytes = saltSizeBytes;
+            _textEncoding = textEncoding ?? Encoding.UTF8;
+        }
 
         /// <inheritdoc />
         /// <exception cref="StringArgumentException"> When <paramref name="password" /> is null or empty. </exception>
@@ -17,10 +32,18 @@
             if (string.IsNullOrWhiteSpace(password))
                 throw new ArgumentException("Password is empty or null.");
 
-            var salt = RandomHelper.GenerateRandom(SaltSize);
-            
-            var hashBytes = GenerateSaltedHash(password, salt);
-            return Convert.ToBase64String(hashBytes);
+            if (_saltSizeBytes.HasValue)
+            {
+                var salt = RandomHelper.GenerateRandom(_saltSizeBytes.Value);
+
+                var hashBytes = GenerateSaltedHash(password, salt);
+                return Convert.ToBase64String(hashBytes);
+            }
+            else
+            {
+                var hashBytes = GenerateSaltlessHash(password);
+                return Convert.ToBase64String(hashBytes);
+            }
         }
         
         /// <inheritdoc />
@@ -35,9 +58,18 @@
 
             var hashedPasswordBytes = Convert.FromBase64String(hashedPassword);
 
-            var salt = hashedPasswordBytes.Take(SaltSize).ToArray();
+            byte[] providedPasswordHashBuffer;
 
-            var providedPasswordHashBuffer = GenerateSaltedHash(providedPassword, salt);
+            if (_saltSizeBytes.HasValue)
+            {
+                var salt = hashedPasswordBytes.Take(_saltSizeBytes.Value).ToArray();
+
+                providedPasswordHashBuffer = GenerateSaltedHash(providedPassword, salt);
+            }
+            else
+            {
+                providedPasswordHashBuffer = GenerateSaltlessHash(providedPassword);
+            }
 
             var providedPasswordHash = Convert.ToBase64String(providedPasswordHashBuffer);
 
@@ -47,10 +79,10 @@
         /// <summary> Generates the hash with give password and salt. </summary>
         /// <param name="password"> The password. </param>
         /// <param name="salt"> The salt. </param>
-        /// <returns> </returns>
+        /// <returns>The hash buffer.</returns>
         byte[] GenerateSaltedHash(string password, byte[] salt)
         {
-            var text = Encoding.UTF8.GetBytes(password);
+            var text = _textEncoding.GetBytes(password);
 
             var managed = SHA512.Create();
 
@@ -59,6 +91,20 @@
             var hash = managed.ComputeHash(textWithSalt);
 
             return salt.Concat(hash).ToArray();
+        }
+
+        /// <summary> Generates the hash with give password. </summary>
+        /// <param name="password">The password.</param>
+        /// <returns>The hash buffer.</returns>
+        byte[] GenerateSaltlessHash(string password)
+        {
+            var text = _textEncoding.GetBytes(password);
+
+            var managed = SHA512.Create();
+
+            var hash = managed.ComputeHash(text);
+
+            return hash;
         }
     }
 }
