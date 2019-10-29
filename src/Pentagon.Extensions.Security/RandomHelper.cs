@@ -7,6 +7,7 @@
 namespace Pentagon.Extensions.Security
 {
     using System;
+    using JetBrains.Annotations;
 
     /// <summary> Represents a helper for random generation. </summary>
     public class RandomHelper
@@ -14,6 +15,8 @@ namespace Pentagon.Extensions.Security
         /// <summary> Generates a random byte array of certain length. </summary>
         /// <param name="length"> The length. </param>
         /// <returns> A byte array with random data. </returns>
+        [Pure]
+        [PublicAPI]
         public static byte[] GenerateRandom(int length)
         {
             var buffer = new byte[length];

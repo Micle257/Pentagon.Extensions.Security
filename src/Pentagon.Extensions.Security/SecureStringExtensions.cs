@@ -14,10 +14,12 @@ namespace Pentagon.Extensions.Security
     /// <summary> Contains extension methods for <see cref="SecureString" />. </summary>
     public static class SecureStringExtensions
     {
-        /// <summary> Converts the secure string to normal string using unmanaged convertion. </summary>
+        /// <summary> Converts the secure string to normal string using unmanaged allocation. </summary>
+        /// <remarks>This method will expose any security sensitive data in string to the stack.</remarks>
         /// <param name="secureString"> The secure string. </param>
         /// <returns> A <see cref="string" />. </returns>
         [Pure]
+        [PublicAPI]
         public static string ConvertToString([NotNull] this SecureString secureString)
         {
             if (secureString == null)
